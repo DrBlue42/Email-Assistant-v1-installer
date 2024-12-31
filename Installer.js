@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '<h1>iOS Required</h1><p>Please open this page on your iPad or iPhone to install.</p>';
         return;
     }
-    ```javascript
+
     installButton.addEventListener('click', function() {
         const steps = document.createElement('div');
         steps.className = 'install-steps visible';
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
             installButton.parentNode.appendChild(steps);
             installButton.textContent = 'Follow Steps Above';
         }
-        ```javascript
+    
     // Track successful installation
     window.addEventListener('appinstalled', (evt) => {
         container.innerHTML = `
