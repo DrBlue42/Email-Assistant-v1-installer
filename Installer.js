@@ -36,5 +36,22 @@ document.addEventListener('DOMContentLoaded', function() {
             installButton.parentNode.appendChild(steps);
             installButton.textContent = 'Follow Steps Above';
         }
+        ```javascript
+    // Track successful installation
+    window.addEventListener('appinstalled', (evt) => {
+        container.innerHTML = `
+            <h1>Installation Successful!</h1>
+            <p>You can now close Safari and launch Email Assistant from your home screen.</p>
+        `;
+    });
+    
+    // Check for updates
+    fetch('version.json')
+        .then(response => response.json())
+        .then(data => {
+            localStorage.setItem('installerVersion', data.version);
+        })
+        .catch(error => console.log('Version check failed'));
+```
 });
 ```
