@@ -1,0 +1,299 @@
+#!/bin/bash
+
+# Create main project directory
+mkdir -p /Email_Assistant_Rev1
+cd /Email_Assistant_Rev1
+
+# Create directory structure
+mkdir -p {src/{core,ios,utils,recovery},docs,tests,scripts}
+mkdir -p src/ios/{components,bridges}
+mkdir -p src/core/{email,processing}
+mkdir -p src/utils/{helpers,constants}
+mkdir -p src/recovery/{strategies,dashboard}
+mkdir -p docs/{setup,api,recovery}
+
+# Package.json
+cat > package.json << 'EOL'
+{
+  "name": "email-assistant",
+  "version": "1.0.0",
+  "description": "Intelligent Email Assistant with Recovery System",
+  "main": "src/index.js",
+  "scripts": {
+    "install": "node scripts/install.js",
+    "start": "node scripts/start.js",
+    "test": "jest",
+    "build:ios": "node scripts/build-ios.js"
+  },
+  "dependencies": {
+    "@capacitor/core": "^latest",
+    "@capacitor/ios": "^latest",
+    "@react-native-async-storage/async-storage": "^latest",
+    "@react-native-community/netinfo": "^latest",
+    "electron": "^latest",
+    "expo-background-fetch": "^latest",
+    "expo-notifications": "^latest",
+    "react": "^latest",
+    "react-dom": "^latest",
+    "react-idle-timer": "^latest",
+    "react-native": "^latest"
+  },
+  "devDependencies": {
+    "jest": "^latest",
+    "typescript": "^latest"
+  }
+}
+EOL
+
+# Create README.md
+cat > README.md << 'EOL'
+# Email Assistant Rev1
+
+An intelligent email management system with advanced recovery capabilities.
+
+## Features
+
+- Intelligent email categorization
+- iOS integration with Mail.app
+- Advanced error recovery system
+- Background processing
+- Real-time monitoring dashboard
+
+## Installation
+
+1. Clone the repository
+2. Run `npm install`
+3. Run `npm run install` for guided setup
+
+## Directory Structure
+
+```
+/Email_Assistant_Rev1
+├── src/
+│   ├── core/           # Core email processing
+│   ├── ios/            # iOS-specific code
+│   ├── utils/          # Utilities and helpers
+│   └── recovery/       # Recovery system
+├── docs/               # Documentation
+├── tests/              # Test suites
+└── scripts/            # Installation and build scripts
+```
+
+## Documentation
+
+See the `/docs` directory for detailed documentation:
+- Setup Guide
+- API Reference
+- Recovery System Guide
+
+## Recovery System
+
+The system includes advanced recovery mechanisms for:
+- Mail connection issues
+- Network connectivity
+- Data integrity
+- Permission problems
+- State consistency
+
+## Monitoring
+
+Access the recovery dashboard through:
+- Automatic triggers during errors
+- Manual activation via settings
+- Background monitoring results
+EOL
+
+# Create main documentation files
+cat > docs/setup/INSTALLATION.md << 'EOL'
+# Installation Guide
+
+## Prerequisites
+- Node.js 14+
+- iOS 14+ (for mobile features)
+- Mail.app configured
+- Xcode 12+ (for iOS development)
+
+## Installation Steps
+
+1. **Initial Setup**
+   ```bash
+   npm install
+   ```
+
+2. **Configuration**
+   - Run the installation script:
+     ```bash
+     npm run install
+     ```
+   - Follow the interactive prompts for:
+     - Email folder configuration
+     - iOS setup preferences
+     - Permission settings
+
+3. **iOS Setup**
+   - Open Xcode project in `ios/`
+   - Configure signing
+   - Build and run
+
+4. **Verification**
+   - Run tests: `npm test`
+   - Check Mail.app integration
+   - Verify folder structure
+
+## Troubleshooting
+
+See docs/TROUBLESHOOTING.md for common issues.
+EOL
+
+cat > docs/api/API_REFERENCE.md << 'EOL'
+# API Reference
+
+## Core Components
+
+### EmailOrganizer
+Main class for email processing and categorization.
+
+```javascript
+const organizer = new EmailOrganizer();
+await organizer.initialize();
+```
+
+### RecoveryStrategies
+Handles system recovery and maintenance.
+
+```javascript
+const recovery = new RecoveryStrategies(emailService);
+await recovery.initiateRecovery('mailConnection');
+```
+
+### Integration Service
+Manages Mail.app integration.
+
+```javascript
+const service = new EmailIntegrationService();
+await service.checkNewEmails();
+```
+
+## Error Handling
+
+### Error Types
+- `MailConnectionError`
+- `NetworkError`
+- `DataIntegrityError`
+- `PermissionError`
+- `StateError`
+
+### Recovery Methods
+- `initiateRecovery(errorType)`
+- `checkSystemState()`
+- `restoreState()`
+
+## iOS Bridge
+
+### Native Methods
+- `executeAppleScript(script)`
+- `checkMailAccess()`
+- `moveEmails(ids, folder)`
+
+## Dashboard API
+
+### Monitoring
+- `getRecoveryStats()`
+- `runBackgroundTests()`
+- `getNotifications()`
+EOL
+
+cat > docs/recovery/RECOVERY_GUIDE.md << 'EOL'
+# Recovery System Guide
+
+## Overview
+
+The recovery system provides automatic and manual recovery mechanisms for various failure scenarios.
+
+## Components
+
+1. **Strategy Manager**
+   - Coordinates recovery attempts
+   - Manages retry policies
+   - Tracks recovery statistics
+
+2. **Recovery Dashboard**
+   - Real-time monitoring
+   - Test execution
+   - Notification system
+
+3. **Background Testing**
+   - Automated checks during idle time
+   - Proactive issue detection
+   - Performance monitoring
+
+## Recovery Strategies
+
+### Mail Connection
+```javascript
+await recoveryStrategies.mailConnection.recover();
+```
+
+### Network Issues
+```javascript
+await recoveryStrategies.networkConnectivity.recover();
+```
+
+### Data Integrity
+```javascript
+await recoveryStrategies.dataIntegrity.recover();
+```
+
+### Permissions
+```javascript
+await recoveryStrategies.permissionIssues.recover();
+```
+
+### State Consistency
+```javascript
+await recoveryStrategies.stateConsistency.recover();
+```
+
+## Best Practices
+
+1. **Monitoring**
+   - Regular status checks
+   - Log analysis
+   - Performance tracking
+
+2. **Maintenance**
+   - Regular testing
+   - Log rotation
+   - State verification
+
+3. **Recovery Process**
+   - Automatic recovery for known issues
+   - Manual intervention options
+   - Progress tracking
+EOL
+
+# Create source file structure (move existing artifacts)
+mv email-organizer src/core/email/
+mv installer-script scripts/
+mv ios-gui src/ios/components/
+mv error-handling-bridge src/ios/bridges/
+mv recovery-strategies src/recovery/strategies/
+mv recovery-dashboard src/recovery/dashboard/
+
+# Create starting point
+cat > src/index.js << 'EOL'
+import { EmailOrganizer } from './core/email/EmailOrganizer';
+import { RecoveryStrategies } from './recovery/strategies/RecoveryStrategies';
+import { RecoveryDashboard } from './recovery/dashboard/RecoveryDashboard';
+import { EmailIntegrationService } from './ios/bridges/EmailIntegrationService';
+
+export {
+  EmailOrganizer,
+  RecoveryStrategies,
+  RecoveryDashboard,
+  EmailIntegrationService
+};
+EOL
+
+echo "Project structure created in /Email_Assistant_Rev1"
+Last edited 6 days ago
