@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="180" fill="#4F46E5"/>
+  
+  <!-- Email Icon -->
+  <g transform="translate(212, 212) scale(0.6)">
+    <!-- Envelope Body -->
+    <path d="M100 100 L900 100 Q1000 100 1000 200 L1000 800 Q1000 900 900 900 L100 900 Q0 900 0 800 L0 200 Q0 100 100 100Z" fill="#FFFFFF"/>
+    
+    <!-- Envelope Flap -->
+    <path d="M0 200 L500 600 L1000 200" fill="none" stroke="#4F46E5" stroke-width="40"/>
+    
+    <!-- AI Symbol -->
+    <g transform="translate(350, 400)">
+      <path d="M150 0 L300 260 L0 260 Z" fill="#4F46E5"/>
+      <circle cx="150" cy="150" r="40" fill="#FFFFFF"/>
+    </g>
+  </g>
+</svg>
