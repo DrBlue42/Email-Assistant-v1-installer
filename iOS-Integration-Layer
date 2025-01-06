@@ -1,0 +1,305 @@
+import { EmailOrganizer } from './email-organizer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as TaskManager from 'expo-task-manager';
+import { Platform } from 'react-native';
+
+const BACKGROUND_FETCH_TASK = 'background-fetch';
+const STORAGE_KEYS = {
+  CONFIG: 'email_assistant_config',
+  CATEGORIES: 'email_categories',
+  PROCESSING_QUEUE: 'processing_queue',
+  LAST_SYNC: 'last_sync_timestamp'
+};
+
+export class EmailIntegrationService {
+  constructor() {
+    this.emailOrganizer = new EmailOrganizer();
+    this.initialized = false;
+    this.processingQueue = [];
+    
+    // Initialize background tasks
+    this.setupBackgroundTasks();
+    // Initialize notifications
+    this.setupNotifications();
+  }
+
+  async initialize() {
+    if (this.initialized) return;
+
+    try {
+      // Load saved configuration
+      const savedConfig = await AsyncStorage.getItem(STORAGE_KEYS.CONFIG);
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        this.emailOrganizer.loadConfiguration(config);
+      }
+
+      // Register background fetch
+      await this.registerBackgroundFetch();
+      
+      // Request notification permissions
+      if (Platform.OS === 'ios') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Notification permissions not granted');
+        }
+      }
+
+      this.initialized = true;
+    } catch (error) {
+      console.error('Initialization failed:', error);
+      throw error;
+    }
+  }
+
+  async setupBackgroundTasks() {
+    TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
+      try {
+        // Check for new emails
+        const newEmails = await this.checkNewEmails();
+        if (newEmails.length > 0) {
+          // Add to processing queue
+          await this.addToProcessingQueue(newEmails);
+          // Schedule processing
+          await this.processQueuedEmails();
+          return BackgroundFetch.Result.NewData;
+        }
+        return BackgroundFetch.Result.NoData;
+      } catch (error) {
+        console.error('Background task failed:', error);
+        return BackgroundFetch.Result.Failed;
+      }
+    });
+  }
+
+  async registerBackgroundFetch() {
+    try {
+      await BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
+        minimumInterval: 15 * 60, // 15 minutes
+        stopOnTerminate: false,
+        startOnBoot: true,
+      });
+    } catch (error) {
+      console.error('Failed to register background task:', error);
+    }
+  }
+
+  async setupNotifications() {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: true,
+      }),
+    });
+  }
+
+  async sendNotification(title, body, data = {}) {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data,
+        },
+        trigger: null, // Immediately show notification
+      });
+    } catch (error) {
+      console.error('Failed to send notification:', error);
+    }
+  }
+
+  async addToProcessingQueue(emails) {
+    try {
+      const currentQueue = await AsyncStorage.getItem(STORAGE_KEYS.PROCESSING_QUEUE);
+      const queue = currentQueue ? JSON.parse(currentQueue) : [];
+      queue.push(...emails);
+      await AsyncStorage.setItem(STORAGE_KEYS.PROCESSING_QUEUE, JSON.stringify(queue));
+      this.processingQueue = queue;
+    } catch (error) {
+      console.error('Failed to add to processing queue:', error);
+      throw error;
+    }
+  }
+
+  async processQueuedEmails() {
+    try {
+      const queue = await AsyncStorage.getItem(STORAGE_KEYS.PROCESSING_QUEUE);
+      if (!queue) return;
+
+      const emails = JSON.parse(queue);
+      const results = await this.emailOrganizer.processBatch(emails);
+      
+      // Group results by category for batch processing
+      const categoryGroups = results.reduce((groups, result) => {
+        if (!groups[result.category]) {
+          groups[result.category] = [];
+        }
+        groups[result.category].push(result.email);
+        return groups;
+      }, {});
+
+      // Process each category group
+      for (const [category, categoryEmails] of Object.entries(categoryGroups)) {
+        await this.moveEmailsToCategory(categoryEmails, category);
+      }
+
+      // Clear processed emails from queue
+      await AsyncStorage.setItem(STORAGE_KEYS.PROCESSING_QUEUE, JSON.stringify([]));
+      this.processingQueue = [];
+
+      // Send completion notification
+      await this.sendNotification(
+        'Email Processing Complete',
+        `Processed ${results.length} emails`
+      );
+
+    } catch (error) {
+      console.error('Failed to process queue:', error);
+      throw error;
+    }
+  }
+
+  async moveEmailsToCategory(emails, category) {
+    try {
+      const script = `
+        tell application "Mail"
+          set targetMailbox to mailbox "${category}"
+          repeat with emailId in ${JSON.stringify(emails.map(e => e.id))}
+            set theMessage to message id emailId
+            move theMessage to targetMailbox
+          end repeat
+        end tell
+      `;
+      
+      // Execute AppleScript through bridge
+      await this.executeAppleScript(script);
+      
+      // Update local storage
+      await this.updateCategoryStats(category, emails.length);
+      
+    } catch (error) {
+      console.error('Failed to move emails:', error);
+      throw error;
+    }
+  }
+
+  async updateCategoryStats(category, count) {
+    try {
+      const statsStr = await AsyncStorage.getItem(STORAGE_KEYS.CATEGORIES);
+      const stats = statsStr ? JSON.parse(statsStr) : {};
+      
+      if (!stats[category]) {
+        stats[category] = { count: 0, accuracy: 100 };
+      }
+      
+      stats[category].count += count;
+      
+      await AsyncStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(stats));
+    } catch (error) {
+      console.error('Failed to update category stats:', error);
+    }
+  }
+
+  async checkNewEmails() {
+    try {
+      const lastSync = await AsyncStorage.getItem(STORAGE_KEYS.LAST_SYNC);
+      const lastSyncDate = lastSync ? new Date(JSON.parse(lastSync)) : new Date(0);
+
+      const script = `
+        tell application "Mail"
+          set newMessages to {}
+          repeat with msg in messages of inbox
+            if date received of msg > "${lastSyncDate.toISOString()}" then
+              set end of newMessages to {|
+                id: message id of msg,
+                subject: subject of msg,
+                sender: sender of msg,
+                dateReceived: date received of msg,
+                content: content of msg
+              |}
+            end if
+          end repeat
+          return newMessages
+        end tell
+      `;
+      
+      const newEmails = await this.executeAppleScript(script);
+      
+      // Update last sync timestamp
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.LAST_SYNC, 
+        JSON.stringify(new Date().toISOString())
+      );
+      
+      return newEmails;
+    } catch (error) {
+      console.error('Failed to check new emails:', error);
+      throw error;
+    }
+  }
+
+  // Bridge method to execute AppleScript (implementation depends on your bridge setup)
+  async executeAppleScript(script) {
+    // This is a placeholder - actual implementation will depend on your
+    // bridge between React Native and native iOS code
+    return await NativeModules.AppleScriptBridge.execute(script);
+  }
+
+  async getStats() {
+    try {
+      const statsStr = await AsyncStorage.getItem(STORAGE_KEYS.CATEGORIES);
+      return statsStr ? JSON.parse(statsStr) : {};
+    } catch (error) {
+      console.error('Failed to get stats:', error);
+      return {};
+    }
+  }
+
+  async clearData() {
+    try {
+      const keys = Object.values(STORAGE_KEYS);
+      await AsyncStorage.multiRemove(keys);
+      this.processingQueue = [];
+    } catch (error) {
+      console.error('Failed to clear data:', error);
+      throw error;
+    }
+  }
+}
+
+// AppleScriptBridge.js (Native Module)
+import { NativeModules } from 'react-native';
+
+export const AppleScriptBridge = NativeModules.AppleScriptBridge;
+
+// Add to your native iOS code:
+/*
+@implementation AppleScriptBridge
+
+RCT_EXPORT_MODULE();
+
+RCT_EXPORT_METHOD(execute:(NSString *)script
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+    NSAppleScript *appleScript = [[NSAppleScript alloc] initWithSource:script];
+    NSDictionary *error = nil;
+    NSAppleEventDescriptor *result = [appleScript executeAndReturnError:&error];
+    
+    if (error) {
+        reject(@"execute_error", @"Failed to execute AppleScript", nil);
+    } else {
+        resolve([self serializeAppleEventDescriptor:result]);
+    }
+}
+
+- (id)serializeAppleEventDescriptor:(NSAppleEventDescriptor *)descriptor
+{
+    // Implementation of serialization logic
+    // Convert NSAppleEventDescriptor to JSON-compatible format
+}
+
+@end
