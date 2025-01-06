@@ -1,0 +1,227 @@
+# Create GitHub deployment structure
+mkdir -p email-assistant-installer
+cd email-assistant-installer
+
+# Create necessary files
+cat > README.md << 'EOL'
+# Email Assistant Installer
+
+Simple installer for Email Assistant iOS app.
+Follow the installation link: https://[your-github-username].github.io/email-assistant-installer
+EOL
+
+# Create GitHub workflow for automatic deployment
+mkdir -p .github/workflows
+cat > .github/workflows/deploy.yml << 'EOL'
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Build
+        run: npm run build
+        
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+EOL
+
+# Create package.json
+cat > package.json << 'EOL'
+{
+  "name": "email-assistant-installer",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "mkdir -p dist && cp -r src/* dist/",
+    "deploy": "gh-pages -d dist"
+  },
+  "dependencies": {
+    "gh-pages": "^3.2.3"
+  }
+}
+EOL
+
+# Create source directory with installer files
+mkdir -p src
+cat > src/index.html << 'EOL'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Install Email Assistant</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="installer">
+        <div class="install-container">
+            <img src="icon.png" alt="Email Assistant" class="app-icon">
+            <h1>Email Assistant</h1>
+            <p>Intelligent email management for your iPad</p>
+            <button id="installButton" class="install-button">
+                Install Now
+            </button>
+        </div>
+    </div>
+    <script src="installer.js"></script>
+</body>
+</html>
+EOL
+
+# Create styles
+cat > src/styles.css << 'EOL'
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f5f5f7;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.install-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 90%;
+    width: 400px;
+}
+
+.app-icon {
+    width: 120px;
+    height: 120px;
+    border-radius: 24px;
+    margin-bottom: 1rem;
+}
+
+h1 {
+    margin: 0;
+    color: #1d1d1f;
+    font-size: 24px;
+}
+
+p {
+    color: #86868b;
+    margin: 0.5rem 0 1.5rem;
+}
+
+.install-button {
+    background: #0071e3;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 20px;
+    font-size: 17px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.install-button:hover {
+    background: #0077ED;
+}
+
+.install-steps {
+    display: none;
+    text-align: left;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #d2d2d7;
+}
+
+.install-steps.visible {
+    display: block;
+}
+
+.step {
+    margin: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step-number {
+    background: #0071e3;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+EOL
+
+# Create installer logic
+cat > src/installer.js << 'EOL'
+document.addEventListener('DOMContentLoaded', function() {
+    const installButton = document.getElementById('installButton');
+    
+    // Check if running as installed PWA
+    if (window.navigator.standalone) {
+        document.body.innerHTML = '<div class="install-container"><h1>Already Installed!</h1><p>Open Email Assistant from your home screen.</p></div>';
+        return;
+    }
+
+    installButton.addEventListener('click', function() {
+        const steps = document.createElement('div');
+        steps.className = 'install-steps';
+        steps.innerHTML = `
+            <div class="step">
+                <div class="step-number">1</div>
+                <div>Tap the Share button in Safari</div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div>Scroll down and tap "Add to Home Screen"</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div>Tap "Add" in the top right</div>
+            </div>
+        `;
+        
+        if (!document.querySelector('.install-steps')) {
+            installButton.parentNode.appendChild(steps);
+        }
+        
+        steps.classList.add('visible');
+    });
+});
+EOL
+
+# Copy the app icon we created earlier
+cp ../../Email_Assistant_Rev1/assets/icon.png src/icon.png
+
+# Create .gitignore
+cat > .gitignore << 'EOL'
+node_modules
+dist
+.DS_Store
+EOL
