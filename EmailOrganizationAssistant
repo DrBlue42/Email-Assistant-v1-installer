@@ -1,0 +1,238 @@
+// Email Organization Assistant
+class EmailOrganizer {
+  constructor() {
+    this.categories = {
+      commercial: [],
+      political: [],
+      aiNewsletters: [],
+      personal: [],
+      business: []
+    };
+    
+    this.trainingData = [];
+    this.model = null;
+    this.features = new Set();
+  }
+
+  // Extract features from email
+  extractFeatures(email) {
+    const features = {
+      hasUnsubscribe: email.body.toLowerCase().includes('unsubscribe'),
+      hasDonate: email.body.toLowerCase().includes('donate'),
+      hasAIKeywords: this.checkAIKeywords(email),
+      fromPersonalDomain: !email.from.includes('@company') && !email.from.includes('@newsletter'),
+      hasGreeting: this.checkPersonalGreeting(email),
+      emailLength: email.body.length,
+      hasBusinessTerms: this.checkBusinessTerms(email),
+      hasCampaignTracking: email.body.includes('utm_campaign'),
+      hasPromotionalTerms: this.checkPromotionalTerms(email)
+    };
+    
+    // Add all discovered features to our feature set
+    Object.keys(features).forEach(f => this.features.add(f));
+    return features;
+  }
+
+  checkAIKeywords(email) {
+    const aiTerms = [
+      'artificial intelligence',
+      'machine learning',
+      'deep learning',
+      'neural networks',
+      'llm',
+      'large language model'
+    ];
+    const content = email.body.toLowerCase();
+    return aiTerms.some(term => content.includes(term));
+  }
+
+  checkBusinessTerms(email) {
+    const businessTerms = [
+      'meeting',
+      'proposal',
+      'contract',
+      'invoice',
+      'project',
+      'deadline'
+    ];
+    const content = email.body.toLowerCase();
+    return businessTerms.some(term => content.includes(term));
+  }
+
+  checkPromotionalTerms(email) {
+    const promoTerms = [
+      'sale',
+      'discount',
+      'limited time',
+      'offer',
+      'exclusive',
+      'buy now'
+    ];
+    const content = email.body.toLowerCase();
+    return promoTerms.some(term => content.includes(term));
+  }
+
+  checkPersonalGreeting(email) {
+    const greetings = [
+      'hi',
+      'hello',
+      'dear',
+      'hey'
+    ];
+    const firstLine = email.body.split('\n')[0].toLowerCase();
+    return greetings.some(greeting => firstLine.includes(greeting));
+  }
+
+  // Learn from user categorization
+  learn(email, category) {
+    const features = this.extractFeatures(email);
+    this.trainingData.push({
+      features,
+      category
+    });
+    
+    // Update the model after learning
+    this.updateModel();
+  }
+
+  // Simple naive Bayes-inspired probability calculation
+  updateModel() {
+    this.model = {
+      categoryProbs: {},
+      featureProbs: {}
+    };
+
+    // Calculate category probabilities
+    const totalEmails = this.trainingData.length;
+    for (const category of Object.keys(this.categories)) {
+      const categoryCount = this.trainingData.filter(d => d.category === category).length;
+      this.model.categoryProbs[category] = categoryCount / totalEmails;
+    }
+
+    // Calculate feature probabilities per category
+    for (const feature of this.features) {
+      this.model.featureProbs[feature] = {};
+      
+      for (const category of Object.keys(this.categories)) {
+        const categoryData = this.trainingData.filter(d => d.category === category);
+        const featurePresentCount = categoryData.filter(d => d.features[feature]).length;
+        this.model.featureProbs[feature][category] = 
+          (featurePresentCount + 1) / (categoryData.length + 2); // Laplace smoothing
+      }
+    }
+  }
+
+  // Predict category for new email
+  predict(email) {
+    if (!this.model) {
+      return null; // Not enough training data
+    }
+
+    const features = this.extractFeatures(email);
+    const scores = {};
+
+    // Calculate score for each category
+    for (const category of Object.keys(this.categories)) {
+      let score = Math.log(this.model.categoryProbs[category]);
+      
+      for (const [feature, value] of Object.entries(features)) {
+        if (this.model.featureProbs[feature]) {
+          const prob = value ? 
+            this.model.featureProbs[feature][category] : 
+            1 - this.model.featureProbs[feature][category];
+          score += Math.log(prob);
+        }
+      }
+      
+      scores[category] = score;
+    }
+
+    // Return category with highest score
+    return Object.entries(scores).reduce((a, b) => a[1] > b[1] ? a : b)[0];
+  }
+
+  // Process a batch of emails
+  async processBatch(emails, userConfirmation = false) {
+    const results = [];
+    
+    for (const email of emails) {
+      const prediction = this.predict(email);
+      
+      if (!prediction) {
+        // Not enough training data - ask for user input
+        results.push({
+          email,
+          status: 'needs_training',
+          message: 'Please categorize this email for training'
+        });
+        continue;
+      }
+
+      if (userConfirmation) {
+        results.push({
+          email,
+          prediction,
+          status: 'needs_confirmation',
+          message: 'Please confirm categorization'
+        });
+      } else {
+        this.categories[prediction].push(email);
+        results.push({
+          email,
+          status: 'processed',
+          category: prediction
+        });
+      }
+    }
+
+    return results;
+  }
+
+  // Get statistics about processed emails
+  getStats() {
+    return {
+      totalProcessed: Object.values(this.categories)
+        .reduce((sum, cat) => sum + cat.length, 0),
+      categoryCounts: Object.fromEntries(
+        Object.entries(this.categories)
+          .map(([cat, emails]) => [cat, emails.length])
+      ),
+      trainingSize: this.trainingData.length,
+      confidence: this.calculateConfidence()
+    };
+  }
+
+  calculateConfidence() {
+    if (this.trainingData.length < 10) return 'Low';
+    if (this.trainingData.length < 50) return 'Medium';
+    return 'High';
+  }
+}
+
+// Example usage:
+/*
+const organizer = new EmailOrganizer();
+
+// Training phase
+const trainingEmails = [/* sample emails */];
+for (const email of trainingEmails) {
+  const category = getUserCategory(email); // Function to get user input
+  organizer.learn(email, category);
+}
+
+// Processing phase
+const newEmails = [/* batch of emails */];
+const results = await organizer.processBatch(newEmails, true);
+
+// Handle results
+for (const result of results) {
+  if (result.status === 'needs_training') {
+    // Get user input for categorization
+  } else if (result.status === 'needs_confirmation') {
+    // Get user confirmation of prediction
+  }
+}
+
+// Get statistics
+console.log(organizer.getStats());
+*/
