@@ -1,0 +1,155 @@
+import React, { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Download, Mail, Settings, Check, Loader } from 'lucide-react';
+
+const WebInstaller = () => {
+  const [step, setStep] = useState(1);
+  const [installing, setInstalling] = useState(false);
+  const [email, setEmail] = useState('');
+  const [showAddToHome, setShowAddToHome] = useState(false);
+
+  const handleInstall = async () => {
+    setInstalling(true);
+    // Simulated installation process
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setShowAddToHome(true);
+    setInstalling(false);
+  };
+
+  const steps = [
+    {
+      title: "Welcome to Email Assistant",
+      subtitle: "Let's get your email organized"
+    },
+    {
+      title: "Installation",
+      subtitle: "Install Email Assistant on your iPad"
+    },
+    {
+      title: "Add to Home Screen",
+      subtitle: "Access Email Assistant easily"
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Progress Indicator */}
+      <div className="pt-8 px-4">
+        <div className="max-w-md mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            {[1, 2, 3].map((num) => (
+              <div key={num} className="flex items-center">
+                <div className={`
+                  w-8 h-8 rounded-full flex items-center justify-center
+                  ${step >= num ? 'bg-blue-500 text-white' : 'bg-gray-200'}
+                `}>
+                  {step > num ? <Check className="w-5 h-5" /> : num}
+                </div>
+                {num < 3 && (
+                  <div className={`
+                    w-16 h-1 mx-2
+                    ${step > num ? 'bg-blue-500' : 'bg-gray-200'}
+                  `} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-md mx-auto mt-8 px-4">
+        <h1 className="text-2xl font-bold text-center mb-2">
+          {steps[step - 1].title}
+        </h1>
+        <p className="text-gray-600 text-center mb-8">
+          {steps[step - 1].subtitle}
+        </p>
+
+        {step === 1 && (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Email Address
+              </label>
+              <div className="relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setStep(2)}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Continue
+            </button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <Settings className="h-6 w-6 text-blue-500" />
+                  <span className="font-medium">Email Assistant</span>
+                </div>
+                <span className="text-sm text-gray-500">v1.0</span>
+              </div>
+              
+              <button
+                onClick={handleInstall}
+                disabled={installing}
+                className="w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                {installing ? (
+                  <>
+                    <Loader className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                    Installing...
+                  </>
+                ) : (
+                  <>
+                    <Download className="-ml-1 mr-2 h-5 w-5" />
+                    Install App
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 || showAddToHome && (
+          <div className="space-y-6">
+            <Alert>
+              <AlertDescription>
+                <div className="space-y-4">
+                  <p>To add Email Assistant to your Home Screen:</p>
+                  <ol className="list-decimal pl-4 space-y-2">
+                    <li>Tap the Share button in Safari</li>
+                    <li>Scroll down and tap "Add to Home Screen"</li>
+                    <li>Tap "Add" in the top right</li>
+                  </ol>
+                </div>
+              </AlertDescription>
+            </Alert>
+
+            <div className="text-center text-sm text-gray-500">
+              After adding to Home Screen, you can open Email Assistant like any other app
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default WebInstaller;
