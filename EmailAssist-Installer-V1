@@ -1,0 +1,199 @@
+Email Assistant Installation Script
+
+#!/usr/bin/env node
+
+const readline = require('readline');
+const fs = require('fs/promises');
+const { execSync } = require('child_process');
+const path = require('path');
+
+class EmailAssistantInstaller {
+  constructor() {
+    this.rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    this.config = {
+      folders: {},
+      installation_path: '',
+      ios_enabled: false,
+      default_rules: {},
+    };
+  }
+
+  async question(query) {
+    return new Promise((resolve) => this.rl.question(query, resolve));
+  }
+
+  async confirmAction(message) {
+    const answer = await this.question(`${message} (y/n): `);
+    return answer.toLowerCase() === 'y';
+  }
+
+  async gatherInitialPreferences() {
+    console.log('\n=== Email Assistant Installation Setup ===\n');
+    
+    // Installation location
+    const defaultPath = path.join(process.env.HOME, 'EmailAssistant');
+    this.config.installation_path = await this.question(
+      `Installation path (default: ${defaultPath}): `
+    ) || defaultPath;
+
+    // iOS Support
+    this.config.ios_enabled = await this.confirmAction(
+      'Would you like to enable iOS support?'
+    );
+
+    // Folder Structure
+    console.log('\n=== Email Category Folder Setup ===\n');
+    
+    const defaultFolders = {
+      commercial: 'Commercial',
+      political: 'Political',
+      aiNewsletters: 'AI-Newsletters',
+      personal: 'Personal',
+      business: 'Business'
+    };
+
+    for (const [key, defaultName] of Object.entries(defaultFolders)) {
+      const folderName = await this.question(
+        `Name for ${key} folder (default: ${defaultName}): `
+      ) || defaultName;
+      
+      this.config.folders[key] = folderName;
+    }
+
+    // Additional custom folders
+    while (await this.confirmAction('Would you like to add another custom folder?')) {
+      const key = await this.question('Enter folder category key (e.g., "research"): ');
+      const name = await this.question('Enter folder display name: ');
+      this.config.folders[key] = name;
+    }
+  }
+
+  async createAppleScripts() {
+    console.log('\n=== Creating Apple Mail Integration Scripts ===\n');
+    
+    const scriptContent = `
+    tell application "Mail"
+      -- Create mail folders if they don't exist
+      ${Object.entries(this.config.folders).map(([key, name]) => `
+      try
+        make new mailbox with properties {name:"${name}"}
+      on error
+        -- Folder might already exist
+      end try`).join('\n')}
+    end tell
+    `;
+
+    await fs.writeFile(
+      path.join(this.config.installation_path, 'setup_mail_folders.scpt'),
+      scriptContent
+    );
+  }
+
+  async createConfigFile() {
+    await fs.writeFile(
+      path.join(this.config.installation_path, 'config.json'),
+      JSON.stringify(this.config, null, 2)
+    );
+  }
+
+  async installDependencies() {
+    console.log('\n=== Installing Required Dependencies ===\n');
+    
+    const dependencies = [
+      'electron',
+      'applescript',
+      'react',
+      'react-dom',
+      '@capacitor/core',  // For iOS support
+      '@capacitor/ios'
+    ];
+
+    try {
+      // Check if npm is installed
+      execSync('npm --version');
+      
+      // Create package.json if it doesn't exist
+      try {
+        await fs.access(path.join(this.config.installation_path, 'package.json'));
+      } catch {
+        execSync('npm init -y', { cwd: this.config.installation_path });
+      }
+
+      // Install dependencies
+      execSync(`npm install ${dependencies.join(' ')}`, {
+        cwd: this.config.installation_path,
+        stdio: 'inherit'
+      });
+
+    } catch (error) {
+      console.error('Error installing dependencies:', error);
+      console.log('Please install Node.js and npm before continuing.');
+      process.exit(1);
+    }
+  }
+
+  async setupIOSProject() {
+    if (!this.config.ios_enabled) return;
+
+    console.log('\n=== Setting up iOS Project ===\n');
+    
+    try {
+      // Initialize Capacitor
+      execSync('npx cap init EmailAssistant com.emailassistant.app', {
+        cwd: this.config.installation_path
+      });
+
+      // Add iOS platform
+      execSync('npx cap add ios', {
+        cwd: this.config.installation_path
+      });
+
+    } catch (error) {
+      console.error('Error setting up iOS project:', error);
+      console.log('Please ensure Xcode is installed for iOS development.');
+    }
+  }
+
+  async install() {
+    try {
+      // Create installation directory
+      await fs.mkdir(this.config.installation_path, { recursive: true });
+
+      // Gather user preferences
+      await this.gatherInitialPreferences();
+
+      // Install dependencies
+      await this.installDependencies();
+
+      // Create Apple Mail integration scripts
+      await this.createAppleScripts();
+
+      // Create configuration file
+      await this.createConfigFile();
+
+      // Setup iOS project if enabled
+      await this.setupIOSProject();
+
+      console.log('\n=== Installation Complete ===\n');
+      console.log('Next steps:');
+      console.log('1. Review configuration in:', path.join(this.config.installation_path, 'config.json'));
+      console.log('2. Run Apple Mail folder setup script');
+      if (this.config.ios_enabled) {
+        console.log('3. Open iOS project in Xcode to configure signing and deployment');
+      }
+
+    } catch (error) {
+      console.error('Installation failed:', error);
+    } finally {
+      this.rl.close();
+    }
+  }
+}
+
+// Run installer
+const installer = new EmailAssistantInstaller();
+installer.install();
