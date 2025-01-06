@@ -1,0 +1,230 @@
+import React, { useState, useEffect } from 'react';
+import { Mail, Settings, BarChart3, Inbox, Tag } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+const EmailAssistantApp = () => {
+  const [activeTab, setActiveTab] = useState('inbox');
+  const [emails, setEmails] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [selectedEmail, setSelectedEmail] = useState(null);
+
+  // Simulated email fetch - will be replaced with actual Apple Mail integration
+  useEffect(() => {
+    const loadEmails = async () => {
+      setLoading(true);
+      try {
+        // This will be replaced with actual email fetching
+        const response = await fetch('/api/emails');
+        const data = await response.json();
+        setEmails(data);
+      } catch (error) {
+        console.error('Error loading emails:', error);
+      }
+      setLoading(false);
+    };
+
+    if (activeTab === 'inbox') {
+      loadEmails();
+    }
+  }, [activeTab]);
+
+  const EmailList = () => (
+    <div className="flex flex-col space-y-2 p-4">
+      {emails.map((email) => (
+        <div 
+          key={email.id}
+          className="bg-white rounded-lg shadow p-4 cursor-pointer hover:bg-gray-50"
+          onClick={() => setSelectedEmail(email)}
+        >
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">{email.subject}</h3>
+              <p className="text-sm text-gray-600">{email.sender}</p>
+            </div>
+            <span className="text-xs text-gray-500">{email.time}</span>
+          </div>
+          <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+            {email.preview}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+
+  const CategorySelector = () => (
+    <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 p-4">
+      <div className="grid grid-cols-2 gap-2">
+        <button 
+          className="bg-blue-500 text-white rounded-lg py-2 px-4"
+          onClick={() => handleCategorize('keep')}
+        >
+          Keep
+        </button>
+        <button 
+          className="bg-red-500 text-white rounded-lg py-2 px-4"
+          onClick={() => handleCategorize('archive')}
+        >
+          Archive
+        </button>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {['Personal', 'Business', 'Newsletter', 'Commercial'].map((category) => (
+          <button
+            key={category}
+            className="bg-gray-100 text-gray-800 rounded-full py-1 px-3 text-sm"
+            onClick={() => handleCategorize(category.toLowerCase())}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const StatsView = () => (
+    <div className="p-4">
+      <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <h2 className="text-lg font-semibold mb-2">Processing Statistics</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-blue-500">
+              {stats?.totalProcessed || 0}
+            </p>
+            <p className="text-sm text-gray-600">Processed</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-green-500">
+              {stats?.accuracy || '0%'}
+            </p>
+            <p className="text-sm text-gray-600">Accuracy</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-4">
+        <h3 className="text-md font-semibold mb-2">Category Distribution</h3>
+        <div className="space-y-2">
+          {Object.entries(stats?.categories || {}).map(([category, count]) => (
+            <div key={category} className="flex items-center">
+              <div className="w-32 text-sm">{category}</div>
+              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 rounded-full h-2" 
+                  style={{ width: `${(count / stats.totalProcessed) * 100}%` }}
+                />
+              </div>
+              <div className="w-12 text-right text-sm text-gray-600">{count}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const SettingsView = () => (
+    <div className="p-4 space-y-4">
+      <div className="bg-white rounded-lg shadow p-4">
+        <h2 className="text-lg font-semibold mb-4">Category Settings</h2>
+        <div className="space-y-4">
+          {Object.entries(settings?.categories || {}).map(([category, enabled]) => (
+            <div key={category} className="flex items-center justify-between">
+              <span className="text-gray-700">{category}</span>
+              <button
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  enabled ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+                onClick={() => toggleCategory(category)}
+              >
+                <span
+                  className={`block w-4 h-4 ml-1 rounded-full transition-transform bg-white ${
+                    enabled ? 'transform translate-x-6' : ''
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-4">
+        <h2 className="text-lg font-semibold mb-4">Processing Options</h2>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-700">Auto-categorize</span>
+            <button
+              className={`w-12 h-6 rounded-full transition-colors ${
+                settings?.autoProcess ? 'bg-blue-500' : 'bg-gray-300'
+              }`}
+              onClick={() => toggleSetting('autoProcess')}
+            >
+              <span
+                className={`block w-4 h-4 ml-1 rounded-full transition-transform bg-white ${
+                  settings?.autoProcess ? 'transform translate-x-6' : ''
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="h-screen flex flex-col bg-gray-100">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 p-4">
+        <h1 className="text-xl font-semibold text-center">Email Assistant</h1>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto">
+        {activeTab === 'inbox' && <EmailList />}
+        {activeTab === 'stats' && <StatsView />}
+        {activeTab === 'settings' && <SettingsView />}
+      </main>
+
+      {/* Bottom Navigation */}
+      <nav className="bg-white border-t border-gray-200">
+        <div className="flex justify-around p-2">
+          <button
+            className={`p-2 rounded-lg ${
+              activeTab === 'inbox' ? 'text-blue-500' : 'text-gray-500'
+            }`}
+            onClick={() => setActiveTab('inbox')}
+          >
+            <Inbox className="w-6 h-6" />
+          </button>
+          <button
+            className={`p-2 rounded-lg ${
+              activeTab === 'stats' ? 'text-blue-500' : 'text-gray-500'
+            }`}
+            onClick={() => setActiveTab('stats')}
+          >
+            <BarChart3 className="w-6 h-6" />
+          </button>
+          <button
+            className={`p-2 rounded-lg ${
+              activeTab === 'settings' ? 'text-blue-500' : 'text-gray-500'
+            }`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <Settings className="w-6 h-6" />
+          </button>
+        </div>
+      </nav>
+
+      {/* Category Selector (shows when email is selected) */}
+      {selectedEmail && <CategorySelector />}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-lg">
+            <p>Loading...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
