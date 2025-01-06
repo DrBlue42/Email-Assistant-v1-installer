@@ -1,0 +1,248 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { AlertTriangle, CheckCircle, RefreshCw, Activity } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useIdleTimer } from 'react-idle-timer';
+
+const RecoveryDashboard = ({ recoveryStrategies, onClose }) => {
+  const [recoveryStats, setRecoveryStats] = useState(null);
+  const [activeTests, setActiveTests] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [isVisible, setIsVisible] = useState(false);
+  const [idleState, setIdleState] = useState('active');
+
+  // Idle timer configuration
+  const onIdle = () => {
+    setIdleState('idle');
+    runBackgroundTests();
+  };
+
+  const onActive = () => {
+    setIdleState('active');
+  };
+
+  const { getRemainingTime } = useIdleTimer({
+    timeout: 1000 * 60 * 2, // 2 minutes
+    onIdle,
+    onActive,
+    debounce: 500
+  });
+
+  const addNotification = useCallback((message, type = 'info') => {
+    const newNotification = {
+      id: Date.now(),
+      message,
+      type,
+      timestamp: new Date()
+    };
+    setNotifications(prev => [newNotification, ...prev].slice(0, 50));
+  }, []);
+
+  // Background test runner
+  const runBackgroundTests = useCallback(async () => {
+    const tests = [
+      {
+        name: 'Mail Connection',
+        run: async () => {
+          const needsRecovery = await recoveryStrategies.strategies.mailConnection.check();
+          return { success: !needsRecovery };
+        }
+      },
+      {
+        name: 'Network Connectivity',
+        run: async () => {
+          const needsRecovery = await recoveryStrategies.strategies.networkConnectivity.check();
+          return { success: !needsRecovery };
+        }
+      },
+      {
+        name: 'Data Integrity',
+        run: async () => {
+          const needsRecovery = await recoveryStrategies.strategies.dataIntegrity.check();
+          return { success: !needsRecovery };
+        }
+      },
+      {
+        name: 'Permissions',
+        run: async () => {
+          const needsRecovery = await recoveryStrategies.strategies.permissionIssues.check();
+          return { success: !needsRecovery };
+        }
+      },
+      {
+        name: 'State Consistency',
+        run: async () => {
+          const needsRecovery = await recoveryStrategies.strategies.stateConsistency.check();
+          return { success: !needsRecovery };
+        }
+      }
+    ];
+
+    for (const test of tests) {
+      setActiveTests(prev => [...prev, test.name]);
+      try {
+        const result = await test.run();
+        addNotification(`${test.name} test: ${result.success ? 'Passed' : 'Failed'}`);
+        
+        if (!result.success) {
+          setIsVisible(true);
+        }
+      } catch (error) {
+        addNotification(`${test.name} test failed: ${error.message}`, 'error');
+        setIsVisible(true);
+      }
+      setActiveTests(prev => prev.filter(name => name !== test.name));
+    }
+  }, [recoveryStrategies, addNotification]);
+
+  // Update recovery stats periodically
+  useEffect(() => {
+    const updateStats = async () => {
+      const stats = await recoveryStrategies.getRecoveryStats();
+      setRecoveryStats(stats);
+    };
+
+    updateStats();
+    const interval = setInterval(updateStats, 5000);
+    return () => clearInterval(interval);
+  }, [recoveryStrategies]);
+
+  // Responsive layout calculations
+  const getNotificationPanelHeight = () => {
+    const windowHeight = window.innerHeight;
+    return windowHeight < 768 ? '30vh' : '40vh';
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <AlertTriangle className="text-yellow-500" />
+            Recovery Dashboard
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Stats Section */}
+          {recoveryStats && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-semibold">Success Rate</h3>
+                <p className="text-2xl">
+                  {recoveryStats.successRate.toFixed(1)}%
+                </p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h3 className="font-semibold">Total Attempts</h3>
+                <p className="text-2xl">{recoveryStats.totalAttempts}</p>
+              </div>
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <h3 className="font-semibold">Active Tests</h3>
+                <p className="text-2xl">{activeTests.length}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Common Issues */}
+          {recoveryStats?.mostCommonIssues.length > 0 && (
+            <div className="bg-white rounded-lg border p-4">
+              <h3 className="font-semibold mb-2">Most Common Issues</h3>
+              <div className="space-y-2">
+                {recoveryStats.mostCommonIssues.map(([issue, count]) => (
+                  <div
+                    key={issue}
+                    className="flex justify-between items-center"
+                  >
+                    <span>{issue}</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded">
+                      {count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Active Tests */}
+          {activeTests.length > 0 && (
+            <div className="bg-white rounded-lg border p-4">
+              <h3 className="font-semibold mb-2">Running Tests</h3>
+              <div className="space-y-2">
+                {activeTests.map(test => (
+                  <div
+                    key={test}
+                    className="flex items-center gap-2 text-blue-600"
+                  >
+                    <RefreshCw className="animate-spin h-4 w-4" />
+                    {test}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Notifications Panel */}
+          <div
+            className="bg-white rounded-lg border"
+            style={{ height: getNotificationPanelHeight() }}
+          >
+            <div className="p-4 border-b border-gray-200">
+              <h3 className="font-semibold">Notifications</h3>
+            </div>
+            <div className="overflow-y-auto p-2 space-y-2" style={{ height: 'calc(100% - 57px)' }}>
+              {notifications.map(notification => (
+                <Alert
+                  key={notification.id}
+                  variant={notification.type === 'error' ? 'destructive' : 'default'}
+                >
+                  <div className="flex items-center gap-2">
+                    {notification.type === 'error' ? (
+                      <AlertTriangle className="h-4 w-4" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                    <AlertDescription>
+                      {notification.message}
+                      <span className="text-xs text-gray-500 ml-2">
+                        {notification.timestamp.toLocaleTimeString()}
+                      </span>
+                    </AlertDescription>
+                  </div>
+                </Alert>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            <span className="text-sm">
+              Status: {idleState === 'idle' ? 'Running background tests' : 'Active'}
+            </span>
+          </div>
+          <button
+            onClick={runBackgroundTests}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Run Tests Now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RecoveryDashboard;
+Last edited 6 days ago
