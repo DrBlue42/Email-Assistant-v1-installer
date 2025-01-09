@@ -1,4 +1,3 @@
-```javascript
 document.addEventListener('DOMContentLoaded', function() {
     const installButton = document.getElementById('installButton');
     const container = document.querySelector('.install-container');
@@ -36,7 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
             installButton.parentNode.appendChild(steps);
             installButton.textContent = 'Follow Steps Above';
         }
-    
+    });
+
     // Track successful installation
     window.addEventListener('appinstalled', (evt) => {
         container.innerHTML = `
@@ -52,6 +52,4 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('installerVersion', data.version);
         })
         .catch(error => console.log('Version check failed'));
-```
 });
-```
