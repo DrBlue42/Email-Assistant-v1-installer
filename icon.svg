@@ -8,7 +8,9 @@
     <!-- Envelope Flap -->
     <path d="M30 60l60 40 60-40" stroke="#0071e3" stroke-width="6" fill="none"/>
     
-    <!-- AI Symbol -->
-    <circle cx="90" cy="100" r="15" fill="#0071e3"/>
-    <path d="M75 115l30-30M75 85l30 30" stroke="#0071e3" stroke-width="6" stroke-linecap="round"/>
+    <!-- Target Circles - Adjusted for balance -->
+    <circle cx="90" cy="100" r="22" fill="#0071e3"/>
+    <circle cx="90" cy="100" r="15" fill="white"/>
+    <circle cx="90" cy="100" r="9" fill="#0071e3"/>
+    <circle cx="90" cy="100" r="3" fill="white"/>
 </svg>
