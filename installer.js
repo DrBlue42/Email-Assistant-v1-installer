@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = 'app.html';
         return;
     }
-
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (!isIOS) {
         container.innerHTML = '<h1>iOS Required</h1><p>Please open this page on your iPad or iPhone to install.</p>';
