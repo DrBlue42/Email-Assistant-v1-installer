@@ -1,7 +1,17 @@
 ```javascript
+console.clear(); // Clear previous messages
+console.log('=== INSTALLER SCRIPT STARTING ===');
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded');
     const installButton = document.getElementById('installButton');
+    console.log('Install button found:', !!installButton);
     const container = document.querySelector('.install-container');
+    console.log('Container found:', !!container);
+    
+## document.addEventListener('DOMContentLoaded', function() {
+   ## const installButton = document.getElementById('installButton');
+   ## const container = document.querySelector('.install-container');
     
     console.log('Script loaded'); // Debug line
     
