@@ -1,4 +1,3 @@
-```javascript
 console.clear(); // Clear previous messages
 console.log('=== INSTALLER SCRIPT STARTING ===');
 
@@ -9,29 +8,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const container = document.querySelector('.install-container');
     console.log('Container found:', !!container);
     
-## document.addEventListener('DOMContentLoaded', function() {
-   ## const installButton = document.getElementById('installButton');
-   ## const container = document.querySelector('.install-container');
-    
-    console.log('Script loaded'); // Debug line
-    
     if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
-        // Launch email assistant interface instead of showing install page
-        console.log('Standalone mode detected'); // Debug line
+        console.log('Standalone mode detected');
         window.location.href = 'app.html';
         return;
     }
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    console.log('iOS device detected:', isIOS);
+    
     if (!isIOS) {
         container.innerHTML = '<h1>iOS Required</h1><p>Please open this page on your iPad or iPhone to install.</p>';
         return;
     }
 
-    // Add click handler with debug
     if (installButton) {
+        console.log('Adding click handler to install button');
         installButton.addEventListener('click', function() {
-            console.log('Button clicked'); // Debug line
+            console.log('Button clicked!');
             const steps = document.createElement('div');
             steps.className = 'install-steps visible';
             steps.innerHTML = `
@@ -52,9 +46,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!document.querySelector('.install-steps')) {
                 installButton.parentNode.appendChild(steps);
                 installButton.textContent = 'Follow Steps Above';
+                console.log('Installation steps displayed');
             }
         });
     } else {
-        console.error('Install button not found'); // Debug line
+        console.error('Install button not found');
     }
 });
