@@ -7,6 +7,15 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Install button found:', !!installButton);
     const container = document.querySelector('.install-container');
     console.log('Container found:', !!container);
+
+    // Debug user agent
+    console.log('User Agent:', navigator.userAgent);
+    
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    console.log('iOS check result:', isIOS);
+    console.log('iPad test:', /iPad/.test(navigator.userAgent));
+    console.log('iPhone test:', /iPhone/.test(navigator.userAgent));
+    console.log('iPod test:', /iPod/.test(navigator.userAgent));
     
     if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
         console.log('Standalone mode detected');
