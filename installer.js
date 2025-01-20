@@ -11,11 +11,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Debug user agent
     console.log('User Agent:', navigator.userAgent);
     
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     console.log('iOS check result:', isIOS);
-    console.log('iPad test:', /iPad/.test(navigator.userAgent));
-    console.log('iPhone test:', /iPhone/.test(navigator.userAgent));
-    console.log('iPod test:', /iPod/.test(navigator.userAgent));
     
     if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
         console.log('Standalone mode detected');
@@ -28,8 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '<h1>iOS Required</h1><p>Please open this page on your iPad or iPhone to install.</p>';
         return;
     }
-
-    // Rest of your code...
 
     if (installButton) {
         console.log('Adding click handler to install button');
