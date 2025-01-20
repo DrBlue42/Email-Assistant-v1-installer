@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Install button found:', !!installButton);
     const container = document.querySelector('.install-container');
     console.log('Container found:', !!container);
-
+    
     // Debug user agent
     console.log('User Agent:', navigator.userAgent);
     
@@ -23,13 +23,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    console.log('iOS device detected:', isIOS);
-    
     if (!isIOS) {
+        console.log('Not iOS - showing iOS required message');
         container.innerHTML = '<h1>iOS Required</h1><p>Please open this page on your iPad or iPhone to install.</p>';
         return;
     }
+
+    // Rest of your code...
 
     if (installButton) {
         console.log('Adding click handler to install button');
