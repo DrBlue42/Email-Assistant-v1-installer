@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
         },
 
         // Make sure there's a comma here if there are more methods after
-#    };
+ 
 
         async initializeApp() {
             try {
