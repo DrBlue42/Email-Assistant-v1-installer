@@ -58,6 +58,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 installButton.parentNode.appendChild(steps);
                 installButton.textContent = 'Follow Steps Below';
                 console.log('Steps displayed');
+                // Enhanced standalone detection
+    const isStandalone = () => {
+        console.log('Navigator standalone:', window.navigator.standalone);
+        console.log('Display mode:', window.matchMedia('(display-mode: standalone)').matches);
+        console.log('Window mode:', window.hasOwnProperty('standalone'));
+        
+        // Try to read from localStorage to detect if we've been launched from home screen
+        const launchedFromHomeScreen = localStorage.getItem('launchedFromHomeScreen');
+        console.log('Launch flag:', launchedFromHomeScreen);
+
+        return window.navigator.standalone || 
+               window.matchMedia('(display-mode: standalone)').matches ||
+               launchedFromHomeScreen === 'true';
+    };
             }
         });
     }
