@@ -1,36 +1,48 @@
-console.clear(); // Clear previous messages
+console.clear();
 console.log('=== INSTALLER SCRIPT STARTING ===');
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM Content Loaded');
     const installButton = document.getElementById('installButton');
-    console.log('Install button found:', !!installButton);
     const container = document.querySelector('.install-container');
-    console.log('Container found:', !!container);
     
-    // Debug user agent
-    console.log('User Agent:', navigator.userAgent);
+    // Enhanced standalone detection with detailed logging
+    const isStandalone = () => {
+        console.log('Navigator standalone:', window.navigator.standalone);
+        console.log('Display mode:', window.matchMedia('(display-mode: standalone)').matches);
+        console.log('Window mode:', window.hasOwnProperty('standalone'));
+        
+        // Try to read from localStorage to detect if we've been launched from home screen
+        const launchedFromHomeScreen = localStorage.getItem('launchedFromHomeScreen');
+        console.log('Launch flag:', launchedFromHomeScreen);
+
+        return window.navigator.standalone || 
+               window.matchMedia('(display-mode: standalone)').matches ||
+               launchedFromHomeScreen === 'true';
+    };
+
+    console.log('Standalone check:', isStandalone());
     
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    console.log('iOS check result:', isIOS);
-    
-    if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
-        console.log('Standalone mode detected');
-        window.location.href = 'app.html';
+    if (isStandalone()) {
+        console.log('Standalone mode detected - redirecting to app');
+        window.location.replace('app.html');
         return;
     }
 
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    console.log('iOS check:', isIOS);
+
     if (!isIOS) {
-        console.log('Not iOS - showing iOS required message');
+        console.log('Not iOS - showing requirement message');
         container.innerHTML = '<h1>iOS Required</h1><p>Please open this page on your iPad or iPhone to install.</p>';
         return;
     }
 
     if (installButton) {
-        console.log('Adding click handler to install button');
+        console.log('Adding click handler');
         installButton.addEventListener('click', function() {
-            console.log('Button clicked!');
+            console.log('Button clicked');
             const steps = document.createElement('div');
             steps.className = 'install-steps visible';
             steps.innerHTML = `
@@ -49,12 +61,12 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             if (!document.querySelector('.install-steps')) {
+                // Set flag before adding to home screen
+                localStorage.setItem('launchedFromHomeScreen', 'true');
                 installButton.parentNode.appendChild(steps);
-                installButton.textContent = 'Follow Steps Above';
-                console.log('Installation steps displayed');
+                installButton.textContent = 'Follow Steps Below';
+                console.log('Steps displayed');
             }
         });
-    } else {
-        console.error('Install button not found');
     }
 });
