@@ -208,7 +208,47 @@ p {
 
 .email-item {
     padding: 16px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #e0e0e0;
+    background: white;
+}
+
+.email-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.email-sender {
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.email-date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.email-subject {
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.email-preview {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.no-emails {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+}
+
+.email-error {
+    padding: 20px;
+    text-align: center;
+    color: #dc2626;
+    background: #fee2e2;
 }
 
 .email-item:last-child {
