@@ -43,11 +43,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
 
-        async executeAppleScript(script) {
-            console.log('Would execute AppleScript:', script);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return true;
-        },
+        executeAppleScript: async function(script) {
+    console.log('Attempting to execute AppleScript:', script);
+    try {
+        const result = await window.webkit.messageHandlers.apple.postMessage(script);
+        console.log('AppleScript result:', result);
+        return result;
+    } catch (error) {
+        console.error('AppleScript execution error:', error);
+        // For now, return mock data to test the interface
+        return [{
+            subject: "Test Email",
+            sender: "test@example.com",
+            dateReceived: new Date(),
+            preview: "This is a test email to verify the display"
+        }];
+    }
+},
 
         async authenticateWithMail(credentials) {
             try {
@@ -168,63 +180,70 @@ document.addEventListener('DOMContentLoaded', function() {
 
        // Other methods above...
 
-        refreshEmails: async function() {
-            try {
-                this.updateStatus('Connecting to Mail.app...');
-                
-                const mailScript = `
-                    tell application "Mail"
-                        try
-                            set messageList to {}
-                            set unreadMessages to (messages of inbox whose read status is false)
-                            repeat with theMessage in unreadMessages
-                                set messageData to {|
-                                    subject: subject of theMessage,
-                                    sender: sender of theMessage,
-                                    dateReceived: date received of theMessage,
-                                    preview: extract name from theMessage
-                                |}
-                                copy messageData to end of messageList
-                            end repeat
-                            return messageList
-                        on error errorMessage
-                            return "Error: " & errorMessage
-                        end try
-                    end tell
-                `;
+       refreshEmails: async function() {
+    try {
+        this.updateStatus('Connecting to Mail.app...');
+        console.log('Starting email refresh');
+        
+        const mailScript = `
+            tell application "Mail"
+                try
+                    set messageList to {}
+                    set unreadMessages to (messages of inbox whose read status is false)
+                    log "Found " & (count of unreadMessages) & " unread messages"
+                    repeat with theMessage in unreadMessages
+                        log "Processing message: " & subject of theMessage
+                        set messageData to {|
+                            subject: subject of theMessage,
+                            sender: sender of theMessage,
+                            dateReceived: date received of theMessage,
+                            preview: extract name from theMessage
+                        |}
+                        copy messageData to end of messageList
+                    end repeat
+                    return messageList
+                on error errorMessage
+                    log "Error: " & errorMessage
+                    return "Error: " & errorMessage
+                end try
+            end tell
+        `;
 
-                const result = await this.executeAppleScript(mailScript);
-                console.log('Mail result:', result);
+        console.log('Executing mail script');
+        const result = await this.executeAppleScript(mailScript);
+        console.log('Mail script result:', result);
 
-                let emailListHTML = '';
-                if (Array.isArray(result) && result.length > 0) {
-                    emailListHTML = result.map(email => `
-                        <div class="email-item">
-                            <div class="email-header">
-                                <span class="email-sender">${email.sender}</span>
-                                <span class="email-date">${new Date(email.dateReceived).toLocaleString()}</span>
-                            </div>
-                            <div class="email-subject">${email.subject}</div>
-                            <div class="email-preview">${email.preview}</div>
-                        </div>
-                    `).join('');
-                } else {
-                    emailListHTML = '<div class="no-emails">No unread emails found</div>';
-                }
-
-                document.getElementById('emailList').innerHTML = emailListHTML;
-                this.updateStatus('Ready');
-                
-            } catch (error) {
-                console.error('Email refresh error:', error);
-                this.updateStatus('Error loading emails. Please try again.');
-                document.getElementById('emailList').innerHTML = `
-                    <div class="email-error">
-                        Unable to load emails. Please check Mail.app connection.
+        let emailListHTML = '';
+        if (Array.isArray(result) && result.length > 0) {
+            console.log('Processing email array');
+            emailListHTML = result.map(email => `
+                <div class="email-item">
+                    <div class="email-header">
+                        <span class="email-sender">${email.sender}</span>
+                        <span class="email-date">${new Date(email.dateReceived).toLocaleString()}</span>
                     </div>
-                `;
-            }
-        },
+                    <div class="email-subject">${email.subject}</div>
+                    <div class="email-preview">${email.preview}</div>
+                </div>
+            `).join('');
+        } else {
+            console.log('No emails found or invalid result:', result);
+            emailListHTML = '<div class="no-emails">No unread emails found (Debug: Check console for details)</div>';
+        }
+
+        document.getElementById('emailList').innerHTML = emailListHTML;
+        this.updateStatus('Ready');
+        
+    } catch (error) {
+        console.error('Email refresh error:', error);
+        this.updateStatus('Error loading emails: ' + error.message);
+        document.getElementById('emailList').innerHTML = `
+            <div class="email-error">
+                Unable to load emails. Error: ${error.message}
+            </div>
+        `;
+    }
+},
 
         // Make sure there's a comma here if there are more methods after
  
