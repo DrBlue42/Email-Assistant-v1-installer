@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!document.querySelector('.install-steps')) {
                 installButton.parentNode.appendChild(steps);
-                installButton.textContent = 'Follow Steps Above';
+                installButton.textContent = 'Follow Steps Below';
                 console.log('Installation steps displayed');
             }
         });
