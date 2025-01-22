@@ -2,49 +2,25 @@ console.clear();
 console.log('=== INSTALLER SCRIPT STARTING ===');
 
 document.addEventListener('DOMContentLoaded', function() {
-    const installButton = document.getElementById('installButton');
-    const container = document.querySelector('.install-container');
+    console.log('Checking launch mode...');
     
-    // Enhanced standalone detection
-    const isStandalone = () => {
-        const standalone = window.navigator.standalone;
-        const urlParams = new URLSearchParams(window.location.search);
-        const fromHomeScreen = urlParams.get('source') === 'homescreen' || 
-                             localStorage.getItem('launchedFromHomeScreen') === 'true';
+    // Check if we're in standalone mode
+    if (window.navigator.standalone === true || 
+        window.matchMedia('(display-mode: standalone)').matches || 
+        document.referrer.includes('homescreen')) {
         
-        console.log('Standalone check:', {
-            standalone,
-            fromHomeScreen,
-            navigator: window.navigator,
-            location: window.location.href
-        });
-        
-        return standalone || fromHomeScreen;
-    };
-
-    if (isStandalone()) {
-        console.log('Standalone mode detected - redirecting to app');
-        localStorage.setItem('launchedFromHomeScreen', 'true');
+        console.log('Standalone detected - going to app');
         window.location.replace('app.html');
         return;
     }
 
-    // Rest of your installer.js code...
+    const installButton = document.getElementById('installButton');
+    const container = document.querySelector('.install-container');
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    console.log('iOS check:', isIOS);
-
-    if (!isIOS) {
-        console.log('Not iOS - showing requirement message');
-        container.innerHTML = '<h1>iOS Required</h1><p>Please open this page on your iPad or iPhone to install.</p>';
-        return;
-    }
-
+    // If not standalone, show install UI
     if (installButton) {
-        console.log('Adding click handler');
         installButton.addEventListener('click', function() {
-            console.log('Button clicked');
+            console.log('Install button clicked');
             const steps = document.createElement('div');
             steps.className = 'install-steps visible';
             steps.innerHTML = `
@@ -63,11 +39,8 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             if (!document.querySelector('.install-steps')) {
-                // Set flag before adding to home screen
-                localStorage.setItem('launchedFromHomeScreen', 'true');
                 installButton.parentNode.appendChild(steps);
                 installButton.textContent = 'Follow Steps Below';
-                console.log('Steps displayed');
             }
         });
     }
