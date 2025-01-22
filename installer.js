@@ -2,32 +2,34 @@ console.clear();
 console.log('=== INSTALLER SCRIPT STARTING ===');
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded');
     const installButton = document.getElementById('installButton');
     const container = document.querySelector('.install-container');
     
-    // Enhanced standalone detection with detailed logging
+    // Enhanced standalone detection
     const isStandalone = () => {
-        console.log('Navigator standalone:', window.navigator.standalone);
-        console.log('Display mode:', window.matchMedia('(display-mode: standalone)').matches);
-        console.log('Window mode:', window.hasOwnProperty('standalone'));
+        const standalone = window.navigator.standalone;
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromHomeScreen = urlParams.get('source') === 'homescreen' || 
+                             localStorage.getItem('launchedFromHomeScreen') === 'true';
         
-        // Try to read from localStorage to detect if we've been launched from home screen
-        const launchedFromHomeScreen = localStorage.getItem('launchedFromHomeScreen');
-        console.log('Launch flag:', launchedFromHomeScreen);
-
-        return window.navigator.standalone || 
-               window.matchMedia('(display-mode: standalone)').matches ||
-               launchedFromHomeScreen === 'true';
+        console.log('Standalone check:', {
+            standalone,
+            fromHomeScreen,
+            navigator: window.navigator,
+            location: window.location.href
+        });
+        
+        return standalone || fromHomeScreen;
     };
 
-    console.log('Standalone check:', isStandalone());
-    
     if (isStandalone()) {
         console.log('Standalone mode detected - redirecting to app');
+        localStorage.setItem('launchedFromHomeScreen', 'true');
         window.location.replace('app.html');
         return;
     }
+
+    // Rest of your installer.js code...
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
