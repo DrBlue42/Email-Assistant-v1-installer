@@ -43,24 +43,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
 
-        executeAppleScript: async function(script) {
+     executeAppleScript: async function(script) {
     console.log('Attempting to execute AppleScript:', script);
     try {
-        const result = await window.webkit.messageHandlers.apple.postMessage(script);
-        console.log('AppleScript result:', result);
-        return result;
+        if (window.MailBridge) {
+            const result = await window.MailBridge.executeAppleScript(script);
+            console.log('Mail bridge result:', result);
+            return result;
+        } else {
+            throw new Error('Mail bridge not available');
+        }
     } catch (error) {
         console.error('AppleScript execution error:', error);
-        // For now, return mock data to test the interface
-        return [{
-            subject: "Test Email",
-            sender: "test@example.com",
-            dateReceived: new Date(),
-            preview: "This is a test email to verify the display"
-        }];
+        throw error;
     }
 },
-
         async authenticateWithMail(credentials) {
             try {
                 const mailCheck = await this.checkMailAccess();
