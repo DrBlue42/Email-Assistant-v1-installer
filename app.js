@@ -1,6 +1,6 @@
-// Add this at the very start of app.js
-if (!window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
-    console.log('Not in standalone mode, redirecting to installer');
+// Force app mode check
+if (!localStorage.getItem('appInstalled')) {
+    console.log('App not marked as installed, redirecting to installer');
     window.location.replace('index.html');
 }
 document.addEventListener('DOMContentLoaded', function() {
