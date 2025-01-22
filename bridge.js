@@ -1,11 +1,9 @@
-// bridge.js
 const MailBridge = {
-    async executeAppleScript: function(script) {
+    executeAppleScript: function(script) {
         console.log('Bridge: Attempting to execute AppleScript');
         
-        // For development/testing, return mock data
-        return new Promise((resolve) => {
-            setTimeout(() => {
+        return new Promise(function(resolve) {
+            setTimeout(function() {
                 const mockEmails = [
                     {
                         subject: "Important Update",
