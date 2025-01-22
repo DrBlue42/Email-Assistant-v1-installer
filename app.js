@@ -173,10 +173,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
 
-            document.getElementById('refreshButton')?.addEventListener('click', () => {
-                this.refreshEmails();
-            });
-
+           // Add this after your email interface HTML setup
+document.getElementById('refreshButton')?.addEventListener('click', async () => {
+    console.log('Manual refresh requested');
+    this.updateStatus('Refreshing emails...');
+    await this.refreshEmails();
+});
             await this.refreshEmails();
         },
 
