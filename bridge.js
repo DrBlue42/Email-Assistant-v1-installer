@@ -1,41 +1,50 @@
 const MailBridge = {
     executeAppleScript: function(script) {
-        console.log('Bridge: Starting Mail.app communication');
+        console.log('Bridge: Beginning Mail.app communication');
         
         return new Promise((resolve, reject) => {
-            // Check if we can access Mail.app
-            const checkScript = `
+            const mailScript = `
                 tell application "Mail"
                     try
-                        set msgs to messages of inbox
-                        return true
+                        set unreadList to {}
+                        set unreadMessages to (messages of inbox whose read status is false)
+                        
+                        repeat with currentMessage in unreadMessages
+                            set msgData to {|
+                                id: id of currentMessage,
+                                subject: subject of currentMessage,
+                                sender: (sender of currentMessage as string),
+                                preview: (extract address from currentMessage),
+                                dateReceived: (date received of currentMessage as string)
+                            |}
+                            set end of unreadList to msgData
+                        end repeat
+                        
+                        return unreadList
                     on error errMsg
-                        return errMsg
+                        log "Error: " & errMsg
+                        return {}
                     end try
                 end tell
             `;
             
-            // For now, let's log what we would send to Mail.app
-            console.log('Would execute:', checkScript);
-            console.log('Full script to execute:', script);
-
-            // TODO: Replace this with actual Mail.app communication
-            // For now, fetch some real-looking data
-            const realishEmails = [
-                {
-                    subject: "Testing Mail Access",
-                    sender: localStorage.getItem('emailAssistantCredentials') ? 
-                        JSON.parse(localStorage.getItem('emailAssistantCredentials')).email : 
-                        "current@user.com",
-                    dateReceived: new Date(),
-                    preview: "This will soon be replaced with your actual emails..."
-                }
-            ];
+            console.log('Attempting to execute Mail.app script');
             
-            // Simulate network delay
-            setTimeout(() => {
-                resolve(realishEmails);
-            }, 500);
+            // Temporary: Return both mock and intended script for testing
+            console.log('Script to be executed:', mailScript);
+            
+            // For testing: Show one real-format message while we implement Mail access
+            const testMessages = [{
+                id: "test-msg-1",
+                subject: "Mail.app Integration Test",
+                sender: localStorage.getItem('emailAssistantCredentials') ? 
+                    JSON.parse(localStorage.getItem('emailAssistantCredentials')).email : 
+                    "user@example.com",
+                preview: "Preparing to fetch your actual unread messages...",
+                dateReceived: new Date().toISOString()
+            }];
+            
+            resolve(testMessages);
         });
     }
 };
