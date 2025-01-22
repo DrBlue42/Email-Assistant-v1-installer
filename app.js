@@ -1,3 +1,8 @@
+// Add this at the very start of app.js
+if (!window.navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('Not in standalone mode, redirecting to installer');
+    window.location.replace('index.html');
+}
 document.addEventListener('DOMContentLoaded', function() {
     console.log('App.js starting');
     const appContainer = document.getElementById('emailAssistant');
