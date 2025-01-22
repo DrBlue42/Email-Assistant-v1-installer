@@ -2,14 +2,11 @@ console.clear();
 console.log('=== INSTALLER SCRIPT STARTING ===');
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Checking launch mode...');
+    console.log('Checking installation state...');
     
-    // Check if we're in standalone mode
-    if (window.navigator.standalone === true || 
-        window.matchMedia('(display-mode: standalone)').matches || 
-        document.referrer.includes('homescreen')) {
-        
-        console.log('Standalone detected - going to app');
+    // Check if already installed
+    if (localStorage.getItem('appInstalled') === 'true' || window.navigator.standalone) {
+        console.log('App detected as installed, redirecting to app');
         window.location.replace('app.html');
         return;
     }
@@ -17,10 +14,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const installButton = document.getElementById('installButton');
     const container = document.querySelector('.install-container');
 
-    // If not standalone, show install UI
     if (installButton) {
         installButton.addEventListener('click', function() {
             console.log('Install button clicked');
+            // Set flag before showing instructions
+            localStorage.setItem('appInstalled', 'true');
+            
             const steps = document.createElement('div');
             steps.className = 'install-steps visible';
             steps.innerHTML = `
